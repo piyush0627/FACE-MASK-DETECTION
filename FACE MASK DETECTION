@@ -1,1 +1,661 @@
-
+{
+  "cells": [
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "rjg14lkDbiye"
+      },
+      "outputs": [],
+      "source": [
+        "!pip install kaggle"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!mkdir -p ~/.kaggle\n",
+        "!cp kaggle.json ~/.kaggle/\n",
+        "!chmod 600 ~/.kaggle/kaggle.json"
+      ],
+      "metadata": {
+        "id": "E_g2N50Pawl_"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!kaggle datasets download -d omkargurav/face-mask-dataset"
+      ],
+      "metadata": {
+        "id": "y87cBh_XaxZ6"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from zipfile import ZipFile\n",
+        "dataset = '/content/face-mask-dataset.zip'\n",
+        "\n",
+        "with ZipFile(dataset,'r') as zip:\n",
+        "  zip.extractall()\n",
+        "  print('The dataset is extracted')"
+      ],
+      "metadata": {
+        "id": "WGTcTIlsbC3b"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!ls"
+      ],
+      "metadata": {
+        "id": "bw5FDhATbfPY"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import os\n",
+        "import numpy as np\n",
+        "import matplotlib.pyplot as plt\n",
+        "import matplotlib.image as mpimg\n",
+        "import cv2\n",
+        "from google.colab.patches import cv2_imshow\n",
+        "from PIL import Image\n",
+        "from sklearn.model_selection import train_test_split"
+      ],
+      "metadata": {
+        "id": "aYOWIgNDb5A0"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "with_mask_files = os.listdir('/content/data/with_mask')\n",
+        "print(with_mask_files[0:5])\n",
+        "print(with_mask_files[-5:])"
+      ],
+      "metadata": {
+        "id": "MgRMEHrbcMWY"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "without_mask_files = os.listdir('/content/data/without_mask')\n",
+        "print(without_mask_files[0:5])\n",
+        "print(without_mask_files[-5:])"
+      ],
+      "metadata": {
+        "id": "JXI7rfha2b8i"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print('Number of with mask images:', len(with_mask_files))\n",
+        "print('Number of without mask images:', len(without_mask_files))"
+      ],
+      "metadata": {
+        "id": "MfcOx_fQ3r0M"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "with_mask_labels = [1]*3725\n",
+        "\n",
+        "without_mask_labels = [0]*3828"
+      ],
+      "metadata": {
+        "id": "wb2LIfog3vEz"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(with_mask_labels[0:5])\n",
+        "\n",
+        "print(without_mask_labels[0:5])"
+      ],
+      "metadata": {
+        "id": "UFmILykl35Yt"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(len(with_mask_labels))\n",
+        "print(len(without_mask_labels))"
+      ],
+      "metadata": {
+        "id": "uZWRfZoA394W"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "labels = with_mask_labels + without_mask_labels\n",
+        "\n",
+        "print(len(labels))\n",
+        "print(labels[0:5])\n",
+        "print(labels[-5:])"
+      ],
+      "metadata": {
+        "id": "30ZlmA6Z4B9x"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "img = mpimg.imread('/content/data/with_mask/with_mask_155.jpg')\n",
+        "imgplot = plt.imshow(img)\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "HIgUsVa94Fic"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# displaying without mask image\n",
+        "img = mpimg.imread('/content/data/without_mask/without_mask_392.jpg')\n",
+        "imgplot = plt.imshow(img)\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "mRZ4Esbf4Nya"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "with_mask_path = '/content/data/with_mask/'\n",
+        "without_mask_path = '/content/data/without_mask/'\n",
+        "\n",
+        "with_mask_files = os.listdir(with_mask_path)\n",
+        "without_mask_files = os.listdir(without_mask_path)\n",
+        "\n",
+        "data = []\n",
+        "\n",
+        "\n",
+        "for img_file in with_mask_files:\n",
+        "    img_path = with_mask_path + img_file\n",
+        "    img = Image.open(img_path)\n",
+        "    img = img.resize((128, 128))\n",
+        "    img = img.convert('RGB')\n",
+        "    img_array = np.array(img)\n",
+        "    data.append(img_array)\n",
+        "\n",
+        "\n",
+        "for img_file in without_mask_files:\n",
+        "    img_path = without_mask_path + img_file\n",
+        "    img = Image.open(img_path)\n",
+        "    img = img.resize((128, 128))\n",
+        "    img = img.convert('RGB')\n",
+        "    img_array = np.array(img)\n",
+        "    data.append(img_array)\n",
+        "\n",
+        "print(\"Type of data:\", type(data))\n",
+        "print(\"Total images:\", len(data))\n",
+        "print(\"Shape of one image:\", data[0].shape)\n"
+      ],
+      "metadata": {
+        "id": "2fMVqmUv4YeA"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "data[57]"
+      ],
+      "metadata": {
+        "id": "at83UoJ66ty9"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "X = np.array(data)\n",
+        "Y = np.array(labels)"
+      ],
+      "metadata": {
+        "id": "z37pSdtT7n6G"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "type(X)"
+      ],
+      "metadata": {
+        "id": "xX0j9Uts79aS"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "type(Y)"
+      ],
+      "metadata": {
+        "id": "DBGhl8H18K8Y"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(X.shape)\n",
+        "print(Y.shape)"
+      ],
+      "metadata": {
+        "id": "v6y7UNYH8Qzl"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(X)"
+      ],
+      "metadata": {
+        "id": "ydPFgK578Tgt"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(Y)"
+      ],
+      "metadata": {
+        "id": "4JjgJVWk8bOr"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=2)"
+      ],
+      "metadata": {
+        "id": "18u18zd58f-M"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(X.shape, X_train.shape, X_test.shape)"
+      ],
+      "metadata": {
+        "id": "rdKy3O0j8mFJ"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "X_train_scaled = X_train/255\n",
+        "\n",
+        "X_test_scaled = X_test/255"
+      ],
+      "metadata": {
+        "id": "FzpDpItU8opg"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "X_train[7]"
+      ],
+      "metadata": {
+        "id": "XQPBHHRP8tVw"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "X_train_scaled[7]"
+      ],
+      "metadata": {
+        "id": "GzaTzwlL8whf"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import tensorflow as tf\n",
+        "from tensorflow import keras\n",
+        "from tensorflow.keras import layers"
+      ],
+      "metadata": {
+        "id": "bYo4zQ3H84fV"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "num_of_classes = 2\n",
+        "\n",
+        "model = keras.Sequential()\n",
+        "\n",
+        "\n",
+        "model.add(layers.Input(shape=(128, 128, 3)))\n",
+        "\n",
+        "\n",
+        "model.add(layers.Conv2D(32, kernel_size=(3, 3), activation='relu'))\n",
+        "model.add(layers.MaxPooling2D(pool_size=(2, 2)))\n",
+        "\n",
+        "\n",
+        "model.add(layers.Conv2D(64, kernel_size=(3, 3), activation='relu'))\n",
+        "model.add(layers.MaxPooling2D(pool_size=(2, 2)))\n",
+        "\n",
+        "\n",
+        "model.add(layers.Flatten())\n",
+        "model.add(layers.Dense(128, activation='relu'))\n",
+        "model.add(layers.Dropout(0.5))\n",
+        "model.add(layers.Dense(64, activation='relu'))\n",
+        "model.add(layers.Dropout(0.5))\n",
+        "\n",
+        "\n",
+        "model.add(layers.Dense(num_of_classes, activation='sigmoid'))"
+      ],
+      "metadata": {
+        "id": "4dEGYNK_9CEo"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "model.compile(optimizer='adam',\n",
+        "              loss='sparse_categorical_crossentropy',\n",
+        "              metrics=['acc'])"
+      ],
+      "metadata": {
+        "id": "bQ2tns4C9o23"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "history = model.fit(X_train_scaled, Y_train, validation_split=0.1, epochs=5)"
+      ],
+      "metadata": {
+        "id": "6j9FjEjS-eEP"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "loss, accuracy = model.evaluate(X_test_scaled, Y_test)\n",
+        "print('Test Accuracy =', accuracy)"
+      ],
+      "metadata": {
+        "id": "ZyRewe6Z-jAk"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "h = history\n",
+        "\n",
+        "# plot the loss value\n",
+        "plt.plot(h.history['loss'], label='train loss')\n",
+        "plt.plot(h.history['val_loss'], label='validation loss')\n",
+        "plt.legend()\n",
+        "plt.show()\n",
+        "\n",
+        "# plot the accuracy value\n",
+        "plt.plot(h.history['acc'], label='train accuracy')\n",
+        "plt.plot(h.history['val_acc'], label='validation accuracy')\n",
+        "plt.legend()\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "IJQH83rn-vXJ"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "input_image_path = input('Path of the image to be predicted: ')\n",
+        "\n",
+        "\n",
+        "input_image = cv2.imread(input_image_path)\n",
+        "\n",
+        "\n",
+        "cv2_imshow(input_image)\n",
+        "\n",
+        "\n",
+        "input_image_resized = cv2.resize(input_image, (128, 128))\n",
+        "\n",
+        "\n",
+        "input_image_scaled = input_image_resized / 255.0\n",
+        "\n",
+        "\n",
+        "input_image_reshaped = np.reshape(input_image_scaled, [1, 128, 128, 3])\n",
+        "\n",
+        "\n",
+        "input_prediction = model.predict(input_image_reshaped)\n",
+        "\n",
+        "print(\"Raw prediction:\", input_prediction)\n",
+        "\n",
+        "\n",
+        "input_pred_label = np.argmax(input_prediction)\n",
+        "\n",
+        "\n",
+        "if input_pred_label == 1:\n",
+        "    print('The person in the image is wearing a mask 😷')\n",
+        "else:\n",
+        "    print('The person in the image is not wearing a mask 😐')\n"
+      ],
+      "metadata": {
+        "id": "4WZDgzQa-34l"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "input_image_path = input('Path of the image to be predicted: ')\n",
+        "\n",
+        "\n",
+        "input_image = cv2.imread(input_image_path)\n",
+        "\n",
+        "\n",
+        "cv2_imshow(input_image)\n",
+        "\n",
+        "\n",
+        "input_image_resized = cv2.resize(input_image, (128, 128))\n",
+        "\n",
+        "\n",
+        "input_image_scaled = input_image_resized / 255.0\n",
+        "\n",
+        "\n",
+        "input_image_reshaped = np.reshape(input_image_scaled, [1, 128, 128, 3])\n",
+        "\n",
+        "\n",
+        "input_prediction = model.predict(input_image_reshaped)\n",
+        "\n",
+        "print(\"Raw prediction:\", input_prediction)\n",
+        "\n",
+        "\n",
+        "input_pred_label = np.argmax(input_prediction)\n",
+        "\n",
+        "\n",
+        "if input_pred_label == 1:\n",
+        "    print('The person in the image is wearing a mask 😷')\n",
+        "else:\n",
+        "    print('The person in the image is not wearing a mask 😐')\n"
+      ],
+      "metadata": {
+        "id": "oh1yTgYz--Xn"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "model.save(\"mask_detector_model.h5\")"
+      ],
+      "metadata": {
+        "id": "JW8NSGO6aC2W"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import gradio as gr\n",
+        "import numpy as np\n",
+        "import cv2\n",
+        "from keras.models import load_model\n",
+        "\n",
+        "# Load the trained model\n",
+        "model = load_model(\"mask_detector_model.h5\")\n",
+        "\n",
+        "# Class labels\n",
+        "class_labels = ['Mask', 'No Mask']\n",
+        "\n",
+        "# Preprocessing function\n",
+        "def preprocess_image(img):\n",
+        "    img = cv2.resize(img, (128, 128))  # Adjust size based on your model input\n",
+        "    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)\n",
+        "    img = img / 255.0\n",
+        "    img = np.expand_dims(img, axis=0)\n",
+        "    return img\n",
+        "\n",
+        "# Prediction function\n",
+        "def predict_mask(image):\n",
+        "    img = preprocess_image(image)\n",
+        "    prediction = model.predict(img)[0]\n",
+        "    label = class_labels[np.argmax(prediction)]\n",
+        "    confidence = float(np.max(prediction)) * 100\n",
+        "    return f\"{label} ({confidence:.2f}%)\"\n",
+        "\n",
+        "# Gradio Interface\n",
+        "interface = gr.Interface(\n",
+        "    fn=predict_mask,\n",
+        "    inputs=gr.Image(type=\"numpy\", label=\"Upload Image\"),\n",
+        "    outputs=gr.Text(label=\"Prediction\"),\n",
+        "    title=\"Face Mask Detector\",\n",
+        "    description=\"Upload an image to check if the person is wearing a mask.\"\n",
+        ")\n",
+        "\n",
+        "# Launch the app\n",
+        "if __name__ == \"__main__\":\n",
+        "    interface.launch()\n"
+      ],
+      "metadata": {
+        "id": "xBdyZqr2VnxJ"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "pip install streamlit"
+      ],
+      "metadata": {
+        "id": "TJBO0mIFZqwN"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "sqhniQraNyy4"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "gpuType": "T4"
+    },
+    "kernelspec": {
+      "display_name": "Python 3",
+      "name": "python3"
+    },
+    "language_info": {
+      "name": "python"
+    },
+    "accelerator": "GPU"
+  },
+  "nbformat": 4,
+  "nbformat_minor": 0
+}
